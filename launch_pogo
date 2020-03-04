@@ -1,0 +1,3 @@
+cd /usr/src/ska-docker/docker-compose
+make start pogo
+
