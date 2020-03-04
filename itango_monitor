@@ -1,0 +1,17 @@
+# Run this commands in itango once the device is running
+
+dev = Device('ska/ps/2')
+mon -a ska/ps/2/state
+mon -a ska/ps/2/current
+mon -a ska/ps/2/voltage
+mon
+mon?
+mon
+dev.On()
+mon
+dev.Voltage = 40
+mon
+dev.Voltage = 20
+dev.Off()
+mon
+

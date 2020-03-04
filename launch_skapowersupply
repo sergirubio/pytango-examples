@@ -1,0 +1,7 @@
+# modify code to import skabase
+# from skabase.SKABaseDevice import SKABaseDevice
+
+# Then
+cd /usr/src/ska-docker/docker-compose
+docker exec -it -e PYTHONPATH=/hosthome itango python3 /hosthome/SKAPowerSupply.py 1 -v4
+
