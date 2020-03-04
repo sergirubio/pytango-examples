@@ -1,0 +1,9 @@
+import tango
+dp = tango.DeviceProxy('ska/ps/2')
+attrs = ['state','current','voltage']
+def callback(event):
+    print('%s: %s' % (event.attr_name,event.err or event.attr_value.value))
+eis = [dp.subscribe_event(a,tango.EventType.CHANGE_EVENT,callback) for a in attrs]
+%hist
+
+

@@ -23,7 +23,7 @@ from PyTango import AttrWriteType, PipeWriteType
 #from SKABaseDevice import SKABaseDevice
 # Additional import
 # PROTECTED REGION ID(SKAPowerSupply.additionnal_import) ENABLED START #
-import time
+import time, traceback, threading, random
 from skabase.SKABaseDevice import SKABaseDevice #<<<
 # PROTECTED REGION END #    //  SKAPowerSupply.additionnal_import
 
@@ -46,17 +46,27 @@ class SKAPowerSupply(SKABaseDevice):
         
     def read_attr_hardware(self,*args):
         self.logger.info('Adding delay of %s seconds' % self.HWUpdateTime)
-        time.sleep(self.HWUpdateTime)
         
     def set_output_current(self):
         try:
             self.current = self.voltage / self.LoadImpedance
+            self.push_change_event('Voltage',self.voltage)
+            self.push_change_event('State')
             return True
         except:
-            self.set_state(DevState.FAULT)
-            self.current = 0
-            self.voltage = 0
+            self.go_to_fault()
             return False
+            
+    def go_to_fault(self):
+        self.set_state(DevState.FAULT)
+        self.current = 0
+        self.voltage = 0
+        self.push_change_event('State')
+        self.push_change_event('Voltage',self.voltage,time.time(),AttrQuality.ATTR_INVALID)
+        
+    def faulty_thread(self):
+        time.sleep(30.)
+        self.go_to_fault()
     
     
     # PROTECTED REGION END #    //  SKAPowerSupply.class_variable
@@ -95,11 +105,11 @@ class SKAPowerSupply(SKABaseDevice):
         label="V",
         unit="V",
         max_value=100,
-        min_value=0,
+        min_value=-1,
         max_alarm=70,
-        min_alarm=0,
+        min_alarm=-1,
         max_warning=60,
-        min_warning=0,
+        min_warning=-1,
     )
 
     Current = attribute(
@@ -119,6 +129,11 @@ class SKAPowerSupply(SKABaseDevice):
         self.voltage = 0.0
         self.current = 0.0
         self.set_state(DevState.OFF)
+        self.set_change_event('State',True,False)
+        self.set_change_event('Voltage',True,True)
+        #self.set_change_event('Current',True,True)
+        self._thr = threading.Thread(target = self.faulty_thread)
+        #self._thr.start()
         # PROTECTED REGION END #    //  SKAPowerSupply.init_device
 
     def always_executed_hook(self):
@@ -141,12 +156,14 @@ class SKAPowerSupply(SKABaseDevice):
     def read_Voltage(self):
         # PROTECTED REGION ID(SKAPowerSupply.Voltage_read) ENABLED START #
         self.logger.info('read_Voltage')
+        time.sleep(self.HWUpdateTime)
         return self.voltage
         # PROTECTED REGION END #    //  SKAPowerSupply.Voltage_read
 
     def write_Voltage(self, value):
         # PROTECTED REGION ID(SKAPowerSupply.Voltage_write) ENABLED START #
         self.voltage = value
+        time.sleep(self.HWUpdateTime)
         if self.get_state() == DevState.ON:
             self.set_output_current()
         # PROTECTED REGION END #    //  SKAPowerSupply.Voltage_write
@@ -162,6 +179,7 @@ class SKAPowerSupply(SKABaseDevice):
     def read_Current(self):
         # PROTECTED REGION ID(SKAPowerSupply.Current_read) ENABLED START #
         self.logger.info('read_Current')
+        time.sleep(self.HWUpdateTime)
         return self.current
         # PROTECTED REGION END #    //  SKAPowerSupply.Current_read
 
@@ -177,6 +195,7 @@ class SKAPowerSupply(SKABaseDevice):
         # PROTECTED REGION ID(SKAPowerSupply.On) ENABLED START #
         if self.set_output_current():
             self.set_state(DevState.ON)
+            self.push_change_event('State')
         # PROTECTED REGION END #    //  SKAPowerSupply.On
 
     def is_On_allowed(self):
@@ -190,6 +209,10 @@ class SKAPowerSupply(SKABaseDevice):
     def Off(self):
         # PROTECTED REGION ID(SKAPowerSupply.Off) ENABLED START #
         self.set_state(DevState.OFF)
+        self.voltage = 0.
+        self.current = 0.
+        self.push_change_event('State')
+        self.push_change_event('Voltage',self.voltage)
         # PROTECTED REGION END #    //  SKAPowerSupply.Off     
 
     def is_Off_allowed(self):
