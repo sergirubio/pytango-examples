@@ -40,6 +40,22 @@ class SKAPowerSupply(SKABaseDevice):
     def Reset(self):
         """ Reset command overloading SKABaseDevice.Reset """
         self.set_state(DevState.OFF)
+        
+    def is_Reset_allowed(self):
+        return self.get_state() in [DevState.FAULT,DevState.RUNNING,DevState.ON]
+        
+    def read_attr_hardware(self,*args):
+        time.sleep(self.HWUpdateTime)
+        
+    def set_output_current(self):
+        try:
+            self.current = self.voltage / self.LoadImpedance
+            return True
+        except:
+            self.set_state(DevState.FAULT)
+            self.current = 0
+            self.voltage = 0
+            return False
     
     
     # PROTECTED REGION END #    //  SKAPowerSupply.class_variable
@@ -129,8 +145,17 @@ class SKAPowerSupply(SKABaseDevice):
     def write_Voltage(self, value):
         # PROTECTED REGION ID(SKAPowerSupply.Voltage_write) ENABLED START #
         self.voltage = value
-        self.current = self.voltage / self.LoadImpedance
+        if self.get_state() == DevState.ON:
+            self.set_output_current()
         # PROTECTED REGION END #    //  SKAPowerSupply.Voltage_write
+
+    def is_Voltage_allowed(self, attr):
+        # PROTECTED REGION ID(SKAPowerSupply.is_Voltage_allowed) ENABLED START #
+        if attr==attr.READ_REQ:
+            return True
+        else:
+            return self.get_state() not in [DevState.FAULT]
+        # PROTECTED REGION END #    //  SKAPowerSupply.is_Voltage_allowed
 
     def read_Current(self):
         # PROTECTED REGION ID(SKAPowerSupply.Current_read) ENABLED START #
@@ -147,8 +172,14 @@ class SKAPowerSupply(SKABaseDevice):
     @DebugIt()
     def On(self):
         # PROTECTED REGION ID(SKAPowerSupply.On) ENABLED START #
-        self.set_state(DevState.ON)
+        if self.set_output_current():
+            self.set_state(DevState.ON)
         # PROTECTED REGION END #    //  SKAPowerSupply.On
+
+    def is_On_allowed(self):
+        # PROTECTED REGION ID(SKAPowerSupply.is_On_allowed) ENABLED START #
+        return self.get_state() not in [DevState.ON,DevState.FAULT,DevState.RUNNING]
+        # PROTECTED REGION END #    //  SKAPowerSupply.is_On_allowed
 
     @command(
     )
@@ -157,6 +188,11 @@ class SKAPowerSupply(SKABaseDevice):
         # PROTECTED REGION ID(SKAPowerSupply.Off) ENABLED START #
         self.set_state(DevState.OFF)
         # PROTECTED REGION END #    //  SKAPowerSupply.Off     
+
+    def is_Off_allowed(self):
+        # PROTECTED REGION ID(SKAPowerSupply.is_Off_allowed) ENABLED START #
+        return self.get_state() not in [DevState.OFF,DevState.FAULT]
+        # PROTECTED REGION END #    //  SKAPowerSupply.is_Off_allowed
 
 # ----------
 # Run server
