@@ -45,6 +45,7 @@ class SKAPowerSupply(SKABaseDevice):
         return self.get_state() in [DevState.FAULT,DevState.RUNNING,DevState.ON]
         
     def read_attr_hardware(self,*args):
+        self.logger.info('Adding delay of %s seconds' % self.HWUpdateTime)
         time.sleep(self.HWUpdateTime)
         
     def set_output_current(self):
@@ -139,6 +140,7 @@ class SKAPowerSupply(SKABaseDevice):
 
     def read_Voltage(self):
         # PROTECTED REGION ID(SKAPowerSupply.Voltage_read) ENABLED START #
+        self.logger.info('read_Voltage')
         return self.voltage
         # PROTECTED REGION END #    //  SKAPowerSupply.Voltage_read
 
@@ -159,6 +161,7 @@ class SKAPowerSupply(SKABaseDevice):
 
     def read_Current(self):
         # PROTECTED REGION ID(SKAPowerSupply.Current_read) ENABLED START #
+        self.logger.info('read_Current')
         return self.current
         # PROTECTED REGION END #    //  SKAPowerSupply.Current_read
 
