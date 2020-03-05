@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd /usr/src/ska-docker/docker-compose
+if [ ! "$(docker ps | grep itango)" ] ; then 
+  make start itango
+fi
+docker exec -t -e PYTHONPATH=/hosthome itango $* &
+

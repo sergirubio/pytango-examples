@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd /home/osboxes/bin
+run_itango python3 /hosthome/PowerSupply.py $1
