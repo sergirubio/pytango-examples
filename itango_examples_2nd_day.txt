@@ -1,0 +1,70 @@
+## Writing a client with new API
+
+import tango
+from tango.client import Device
+dev = Device('ska/ps/2')
+dev.Status()
+dev.State()
+dev.On()
+dev.Voltage = 10
+
+cb = tango.utils.EventCallback()
+eis = [dev.subscribe_event(a, tango.EventType.CHANGE_EVENT,cb) for a in ('State','Current','Voltage')]
+
+## Accessing polling configuration
+
+dev.polling_status()
+[dev.unsubscribe_event(e) for e in eis]
+
+for p in dev.polling_status():
+    print(p)
+
+dev.get_attribute_list()
+dev.get_attribute_poll_period('Current')
+dev.poll_attribute('Current',6000)
+dev.is_attribute_polled('Current')
+dev.stop_poll_attribute('Current')
+
+ac = dev.get_attribute_config('Current')
+ac.max_alarm
+
+## Classical python API
+
+dev = tango.DeviceProxy('ska/ps/2')
+dev.read_attribute('Current').time
+dev.read_attribute('Current').quality
+dev.write_attribute('Voltage',70.0)
+dev.read_attribute('Current').value
+dev.State()
+dev.command_inout('On')
+dev.read_attribute('Current').value
+dev.read_attribute('Current').quality
+ac.max_alarm
+def callback(event):
+    if event.err:
+        print(event)
+    else:
+        print(event.attr_name, event.attr_value.value, event.attr_value.time, event.attr_value.quality)
+eis.extend([dev.subscribe_event(a,tango.EventType.CHANGE_EVENT,callback) for a in attrs])
+dev.command_inout('Off')
+dev.On()
+dd = tango.client.Device
+[dev.unsubscribe_event(e) for e in eis]
+eis.clear()
+
+## Accessing the database to modify attribute polling
+
+db = tango.Database()
+db.get_device_exported('ska/ps/*')
+devs = db.get_device_exported('ska/ps/*')
+devs
+for d in devs:
+    dp = tango.Device(d)
+    attrs = dp.get_attribute_list()
+    for a in attrs:
+        dp.poll_attribute(a, 10000)
+for d in devs:
+    dp = tango.client.Device(d)
+    attrs = dp.get_attribute_list()
+    for a in attrs:
+        dp.poll_attribute(a, 10000)
