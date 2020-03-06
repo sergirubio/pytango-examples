@@ -1,18 +1,30 @@
-# fandango setup to add new devices from shell
+## Install fandango
 
-sudo apt-get update
-cat /etc/tangorc
-sudo apt install python-tango tango-starter python-pip
-sudo pip install fandango
+fandango setup to add new devices from shell
+
+    sudo apt-get update
+    cat /etc/tangorc
+    sudo apt install python-tango tango-starter python-pip
+
+    # if asked about TANGO_HOST:
+        osboxes:10000
+
+    sudo pip install fandango
  
-fandango add_new_device Starter/osboxes Starter tango/admin/osboxes
+## Creating Starter device and showing up in Astor tool
 
-mkdir /home/osboxes/bin
-cp pytango-examples/run_itango pytango-examples/PowerSupply /home/osboxes/bin
+    fandango add_new_device Starter/osboxes Starter tango/admin/osboxes
 
-fandango put_device_property tango/admin/osboxes StartDsPath /home/osboxes/bin
+    mkdir /home/osboxes/bin
+    cp pytango-examples/run_itango pytango-examples/PowerSupply /home/osboxes/bin
+
+    fandango put_device_property tango/admin/osboxes StartDsPath /home/osboxes/bin
  
-Starter osboxes &
-cd /usr/src/ska-docker/docker-compose
-make start astor
+    Starter osboxes &
+    cd /usr/src/ska-docker/docker-compose
+    make start astor
+
+## Installing panic alarm tool
+
+   
 

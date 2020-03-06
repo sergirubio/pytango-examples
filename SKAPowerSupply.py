@@ -47,10 +47,24 @@ class SKAPowerSupply(SKABaseDevice):
     def read_attr_hardware(self,*args):
         self.logger.info('Adding delay of %s seconds' % self.HWUpdateTime)
         
+    def set_state(self, state):
+        self._state = state
+        
     def set_output_current(self):
         try:
-            self.current = self.voltage / self.LoadImpedance
+            self.set_state(DevState.RUNNING)
+            self.push_change_event('State')
             self.push_change_event('Voltage',self.voltage)
+            old = self.current
+            step = ((self.voltage / self.LoadImpedance)-old)/10.
+
+            for i in range(1,11):
+                self.current += step
+                self.push_change_event('Current',self.current)
+                time.sleep(self.HWUpdateTime)
+                
+            #self.current = self.voltage / self.LoadImpedance
+            self.set_state(DevState.ON)
             self.push_change_event('State')
             return True
         except:
@@ -132,8 +146,6 @@ class SKAPowerSupply(SKABaseDevice):
         self.set_change_event('State',True,False)
         self.set_change_event('Voltage',True,True)
         #self.set_change_event('Current',True,True)
-        self._thr = threading.Thread(target = self.faulty_thread)
-        #self._thr.start()
         # PROTECTED REGION END #    //  SKAPowerSupply.init_device
 
     def always_executed_hook(self):
@@ -141,6 +153,7 @@ class SKAPowerSupply(SKABaseDevice):
         st   = '%s is %s' % (self.get_name(), self.get_state())
         st += '\nVoltage = %s, Current = %s' % (self.voltage, self.current)
         self.set_status(st)
+        Device.set_state(self, self._state)
         self.logger.info(self.get_status())
         # PROTECTED REGION END #    //  SKAPowerSupply.always_executed_hook
 
@@ -165,7 +178,8 @@ class SKAPowerSupply(SKABaseDevice):
         self.voltage = value
         time.sleep(self.HWUpdateTime)
         if self.get_state() == DevState.ON:
-            self.set_output_current()
+            self._thr = threading.Thread(self.set_output_current)
+            self._thr.start()
         # PROTECTED REGION END #    //  SKAPowerSupply.Voltage_write
 
     def is_Voltage_allowed(self, attr):
@@ -173,7 +187,7 @@ class SKAPowerSupply(SKABaseDevice):
         if attr==attr.READ_REQ:
             return True
         else:
-            return self.get_state() not in [DevState.FAULT]
+            return self.get_state() in [DevState.ON, DevState.OFF]
         # PROTECTED REGION END #    //  SKAPowerSupply.is_Voltage_allowed
 
     def read_Current(self):
@@ -193,9 +207,10 @@ class SKAPowerSupply(SKABaseDevice):
     @DebugIt()
     def On(self):
         # PROTECTED REGION ID(SKAPowerSupply.On) ENABLED START #
-        if self.set_output_current():
-            self.set_state(DevState.ON)
-            self.push_change_event('State')
+        if getattr(self,'_thr',None) is not None:
+            self._thr.join()
+        self._thr = threading.Thread(target = self.set_output_current)
+        self._thr.start()
         # PROTECTED REGION END #    //  SKAPowerSupply.On
 
     def is_On_allowed(self):
