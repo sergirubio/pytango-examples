@@ -35,4 +35,10 @@ def unsubscribe_all():
         
 
     
+read_attributes()
+subscribe_all()
+
+tg.write_attribute('Voltage',70.)
+tg.command_inout('On')
+read_attributes()
 
