@@ -46,10 +46,7 @@ class SKAPowerSupply(SKABaseDevice):
         
     def read_attr_hardware(self,*args):
         self.logger.info('Adding delay of %s seconds' % self.HWUpdateTime)
-        
-    def set_state(self, state):
-        self._state = state
-        
+               
     def set_output_current(self):
         try:
             self.set_state(DevState.RUNNING)
@@ -153,7 +150,6 @@ class SKAPowerSupply(SKABaseDevice):
         st   = '%s is %s' % (self.get_name(), self.get_state())
         st += '\nVoltage = %s, Current = %s' % (self.voltage, self.current)
         self.set_status(st)
-        Device.set_state(self, self._state)
         self.logger.info(self.get_status())
         # PROTECTED REGION END #    //  SKAPowerSupply.always_executed_hook
 
